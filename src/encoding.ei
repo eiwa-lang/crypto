@@ -1,0 +1,23 @@
+import { String, NativeString } from "std.core"
+import { NativeCrypto } from ".native"
+
+fun nativeStringFrom(p: Pointer): String = String(p, NativeString.strlen(p))
+
+// Base64url encoding/decoding (RFC 4648 §5), with and without padding.
+object Encoding {
+
+    // base64url without padding (JWT/JWS style)
+    fun base64UrlNoPadding(data: String): String {
+        return nativeStringFrom(NativeCrypto.b64urlEncode(data.ptr, 0))
+    }
+
+    // base64url with padding
+    fun base64Url(data: String): String {
+        return nativeStringFrom(NativeCrypto.b64urlEncode(data.ptr, 1))
+    }
+
+    // Decodes base64url with or without padding.
+    fun base64UrlDecode(data: String): String {
+        return nativeStringFrom(NativeCrypto.b64urlDecode(data.ptr))
+    }
+}

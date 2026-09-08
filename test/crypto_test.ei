@@ -1,0 +1,61 @@
+import { assert } from "std.core"
+import { Crypto } from ".crypto"
+import { Encoding } from ".encoding"
+
+// SHA-256 of "abc" (FIPS 180-4 test vector)
+test "crypto: sha256Hex known vector" {
+    assert(Crypto.sha256Hex("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+}
+
+// RFC 4231 Test Case 2: HMAC-SHA256 with key "Jefe",
+// data "what do ya want for nothing?"
+test "crypto: hmacSha256Hex RFC 4231 vector" {
+    assert(Crypto.hmacSha256Hex("what do ya want for nothing?", "Jefe") == "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")
+}
+
+// RFC 7636 Appendix B: S256 code challenge for the well-known verifier
+test "crypto: sha256Base64Url PKCE RFC 7636 vector" {
+    val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+    assert(Crypto.sha256Base64Url(verifier) == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
+}
+
+test "crypto: secureRandom length and uniqueness" {
+    val a = Crypto.secureRandom(43)
+    val b = Crypto.secureRandom(43)
+    assert(a.length == 43)
+    assert(b.length == 43)
+    assert(a != b)
+}
+
+test "crypto: base64url round-trip without padding" {
+    val enc = Encoding.base64UrlNoPadding("hello eiwa")
+    assert(enc == "aGVsbG8gZWl3YQ")
+    assert(Encoding.base64UrlDecode(enc) == "hello eiwa")
+}
+
+test "crypto: base64url round-trip with padding" {
+    val enc = Encoding.base64Url("hi")
+    assert(enc == "aGk=")
+    assert(Encoding.base64UrlDecode(enc) == "hi")
+}
+
+test "crypto: base64url decode accepts padded and unpadded" {
+    assert(Encoding.base64UrlDecode("aGk=") == "hi")
+    assert(Encoding.base64UrlDecode("aGk") == "hi")
+}
+
+// ES256: sign with a generated P-256 key, then verify structure (b64url of 64 raw bytes)
+// Key generated with: openssl ecparam -genkey -name prime256v1
+test "crypto: signEcdsaP256 produces JWS raw signature" {
+    val pem = "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEILcHcqL/KEoVGlPkvVJqPEH350q9QgnY/a8KBSke+axloAoGCCqGSM49\nAwEHoUQDQgAE1fQo2UYHn6sGQZ4SsPUJC4wbkBa25be3NGE/4GWlr9RMQp6JrpUc\nLJ3+eIjzsnUjIysWokyY2sdxfyKgzCIetw==\n-----END EC PRIVATE KEY-----\n"
+    val sig = Crypto.signEcdsaP256("test.header.payload", pem)
+    // raw r||s = 64 bytes -> base64url no padding = ceil(64/3)*4 - padding = 86 chars
+    assert(sig.length == 86)
+    // deterministic shape: only base64url alphabet
+    var i = 0
+    while (i < sig.length) {
+        val c = sig.substring(i, i + 1)
+        assert("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".indexOf(c) >= 0)
+        i = i + 1
+    }
+}

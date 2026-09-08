@@ -1,0 +1,34 @@
+// crypto/native.ei — OpenSSL (libcrypto) bindings.
+//
+// Exposes only the primitives required by the Crypto/Encoding APIs.
+// All glue (base64url alphabet, hex, DER->raw signature conversion) lives in
+// the vendored crypto_wrapper.c; this block only declares the entry points.
+
+@Link("crypto")
+@Source("./runtime/third_party/crypto/crypto_wrapper.c")
+lib NativeCrypto {
+
+    @Alias("eiwa_crypto_sha256_hex")
+    fun sha256Hex(data: Pointer): Pointer
+
+    @Alias("eiwa_crypto_sha256_b64url")
+    fun sha256Base64Url(data: Pointer): Pointer
+
+    @Alias("eiwa_crypto_hmac_sha256_hex")
+    fun hmacSha256Hex(data: Pointer, key: Pointer): Pointer
+
+    @Alias("eiwa_crypto_b64url_encode")
+    fun b64urlEncode(data: Pointer, padding: Int): Pointer
+
+    @Alias("eiwa_crypto_b64url_encode_bytes")
+    fun b64urlEncodeBytes(data: Pointer, len: Int, padding: Int): Pointer
+
+    @Alias("eiwa_crypto_b64url_decode")
+    fun b64urlDecode(data: Pointer): Pointer
+
+    @Alias("eiwa_crypto_random_base64url")
+    fun randomBase64Url(n: Int): Pointer
+
+    @Alias("eiwa_crypto_sign_es256")
+    fun signEs256(data: Pointer, privateKeyPem: Pointer): Pointer
+}
