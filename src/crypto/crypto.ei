@@ -1,4 +1,4 @@
-import { String, cstr } from "std.core"
+import { String } from "std.core"
 import { NativeCrypto } from ".crypto.native"
 
 // Cryptographic primitives backed by OpenSSL (libcrypto).
@@ -7,18 +7,18 @@ object Crypto {
 
     // SHA-256 of a UTF-8 string, hex-encoded (lowercase).
     fun sha256Hex(data: String): String {
-        return cstr(NativeCrypto.sha256Hex(data.ptr))
+        return String(NativeCrypto.sha256Hex(data.ptr))
     }
 
     // SHA-256 of a UTF-8 string, base64url-encoded without padding.
     // This is the PKCE S256 code_challenge form (RFC 7636).
     fun sha256Base64Url(data: String): String {
-        return cstr(NativeCrypto.sha256Base64Url(data.ptr))
+        return String(NativeCrypto.sha256Base64Url(data.ptr))
     }
 
     // HMAC-SHA256 hex digest. Used by the signed session cookie transport.
     fun hmacSha256Hex(data: String, secret: String): String {
-        return cstr(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr))
+        return String(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr))
     }
 
     // Cryptographically secure random string: base64url(no padding) of `n`
@@ -32,6 +32,6 @@ object Crypto {
     // ASN.1/DER form.
     fun signEcdsaP256(data: String, privateKeyPem: String): String {
         val pem = privateKeyPem.replace("\\n", "\n")
-        return cstr(NativeCrypto.signEs256(data.ptr, pem.ptr))
+        return String(NativeCrypto.signEs256(data.ptr, pem.ptr))
     }
 }
