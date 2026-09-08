@@ -1,7 +1,5 @@
-import { String, NativeString } from "std.core"
+import { String, cstr } from "std.core"
 import { NativeCrypto } from ".crypto.native"
-
-fun nativeString(p: Pointer): String = String(p, NativeString.strlen(p))
 
 // Cryptographic primitives backed by OpenSSL (libcrypto).
 // Mirrors kargo-crypto's API surface used by underhold services.
@@ -9,18 +7,18 @@ object Crypto {
 
     // SHA-256 of a UTF-8 string, hex-encoded (lowercase).
     fun sha256Hex(data: String): String {
-        return nativeString(NativeCrypto.sha256Hex(data.ptr))
+        return cstr(NativeCrypto.sha256Hex(data.ptr))
     }
 
     // SHA-256 of a UTF-8 string, base64url-encoded without padding.
     // This is the PKCE S256 code_challenge form (RFC 7636).
     fun sha256Base64Url(data: String): String {
-        return nativeString(NativeCrypto.sha256Base64Url(data.ptr))
+        return cstr(NativeCrypto.sha256Base64Url(data.ptr))
     }
 
     // HMAC-SHA256 hex digest. Used by the signed session cookie transport.
     fun hmacSha256Hex(data: String, secret: String): String {
-        return nativeString(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr))
+        return cstr(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr))
     }
 
     // Cryptographically secure random string: base64url(no padding) of `n`
@@ -34,6 +32,6 @@ object Crypto {
     // ASN.1/DER form.
     fun signEcdsaP256(data: String, privateKeyPem: String): String {
         val pem = privateKeyPem.replace("\\n", "\n")
-        return nativeString(NativeCrypto.signEs256(data.ptr, pem.ptr))
+        return cstr(NativeCrypto.signEs256(data.ptr, pem.ptr))
     }
 }
