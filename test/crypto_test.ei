@@ -1,6 +1,6 @@
 import { assert } from "std.core"
-import { Crypto } from ".crypto"
-import { Encoding } from ".encoding"
+import { Crypto } from ".crypto.crypto"
+import { Encoding } from ".crypto.encoding"
 
 // SHA-256 of "abc" (FIPS 180-4 test vector)
 test "crypto: sha256Hex known vector" {
