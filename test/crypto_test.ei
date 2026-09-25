@@ -59,3 +59,23 @@ test "crypto: signEcdsaP256 produces JWS raw signature" {
         i = i + 1
     }
 }
+
+// RFC 6455 Section 1.3: accept for the well-known example key.
+test "crypto: sha1Base64 RFC 6455 accept vector" {
+    val key = "dGhlIHNhbXBsZSBub25jZQ=="
+    val accept = Crypto.sha1Base64("${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+    assert(accept == "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
+}
+
+test "crypto: base64 standard vectors" {
+    assert(Encoding.base64("hello eiwa") == "aGVsbG8gZWl3YQ==")
+    assert(Encoding.base64("hi") == "aGk=")
+    assert(Encoding.base64("abc") == "YWJj")
+}
+
+test "crypto: randomBase64 shape for a 16-byte key" {
+    val k = Crypto.randomBase64(16)
+    assert(k.length == 24)
+    val k2 = Crypto.randomBase64(16)
+    assert(k != k2)
+}

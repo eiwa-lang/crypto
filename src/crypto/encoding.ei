@@ -18,4 +18,9 @@ object Encoding {
     fun base64UrlDecode(data: String): String {
         return String(NativeCrypto.b64urlDecode(data.ptr))
     }
+
+    // Standard base64 (RFC 4648 §4) with padding.
+    fun base64(data: String): String {
+        return String(NativeCrypto.base64Encode(data.ptr))
+    }
 }

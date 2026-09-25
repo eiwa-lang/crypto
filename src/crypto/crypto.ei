@@ -27,6 +27,19 @@ object Crypto {
         return String(NativeCrypto.randomBase64Url(length), length)
     }
 
+    // SHA-1 digest, standard base64 (RFC 4648 §4, with padding).
+    // Used for the WebSocket accept key (RFC 6455 §4.2.2).
+    fun sha1Base64(data: String): String {
+        return String(NativeCrypto.sha1Base64(data.ptr))
+    }
+
+    // Cryptographically secure random string: standard base64 (with
+    // padding) of `n` random bytes. `randomBase64(16)` is the
+    // Sec-WebSocket-Key form (RFC 6455 §4.1).
+    fun randomBase64(n: Int): String {
+        return String(NativeCrypto.randomBase64(n))
+    }
+
     // Signs data with an EC P-256 private key (PEM) and returns the JWS/ES256
     // signature: base64url(no padding) of raw r||s (64 bytes) — NOT the
     // ASN.1/DER form.

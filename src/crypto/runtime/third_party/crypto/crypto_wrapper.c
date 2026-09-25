@@ -21,6 +21,9 @@ extern void* GC_malloc(size_t);
 static const char B64URL_ALPHABET[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
+static const char B64STD_ALPHABET[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 static char* to_hex(const unsigned char* bytes, size_t len) {
     static const char HEX[] = "0123456789abcdef";
     char* out = (char*)GC_malloc(len * 2 + 1);
@@ -96,6 +99,40 @@ static unsigned char* b64url_decode(const char* in, size_t* out_len) {
     return out;
 }
 
+// Standard base64 (RFC 4648 Section 4), always padded. Unlike the URL
+// variant above, '+' and '/' are kept: required by protocols such as the
+// WebSocket handshake (RFC 6455).
+static char* b64std_encode(const unsigned char* data, size_t len) {
+    size_t out_cap = ((len + 2) / 3) * 4 + 1;
+    char* out = (char*)GC_malloc(out_cap);
+    size_t o = 0;
+    size_t i = 0;
+    while (i + 3 <= len) {
+        unsigned v = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+        out[o++] = B64STD_ALPHABET[(v >> 18) & 0x3F];
+        out[o++] = B64STD_ALPHABET[(v >> 12) & 0x3F];
+        out[o++] = B64STD_ALPHABET[(v >> 6) & 0x3F];
+        out[o++] = B64STD_ALPHABET[v & 0x3F];
+        i += 3;
+    }
+    size_t rem = len - i;
+    if (rem == 1) {
+        unsigned v = data[i] << 16;
+        out[o++] = B64STD_ALPHABET[(v >> 18) & 0x3F];
+        out[o++] = B64STD_ALPHABET[(v >> 12) & 0x3F];
+        out[o++] = '=';
+        out[o++] = '=';
+    } else if (rem == 2) {
+        unsigned v = (data[i] << 16) | (data[i + 1] << 8);
+        out[o++] = B64STD_ALPHABET[(v >> 18) & 0x3F];
+        out[o++] = B64STD_ALPHABET[(v >> 12) & 0x3F];
+        out[o++] = B64STD_ALPHABET[(v >> 6) & 0x3F];
+        out[o++] = '=';
+    }
+    out[o] = '\0';
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // Public API (bound from Eiwa via @Alias)
 // ---------------------------------------------------------------------------
@@ -138,6 +175,27 @@ char* eiwa_crypto_b64url_decode(const char* data) {
     if (out == NULL) return NULL;
     out[out_len] = '\0';
     return (char*)out;
+}
+
+// SHA-1 digest, standard-base64 encoded. Used for the WebSocket accept
+// key (RFC 6455 Section 4.2.2).
+char* eiwa_crypto_sha1_base64(const char* data) {
+    unsigned char digest[SHA_DIGEST_LENGTH];
+    SHA1((const unsigned char*)data, strlen(data), digest);
+    return b64std_encode(digest, SHA_DIGEST_LENGTH);
+}
+
+// Standard base64 (RFC 4648 Section 4) with padding.
+char* eiwa_crypto_base64_encode(const char* data) {
+    return b64std_encode((const unsigned char*)data, strlen(data));
+}
+
+// Generates `n` random bytes and returns them standard-base64 encoded.
+// A 16-byte input is the Sec-WebSocket-Key form (RFC 6455 Section 4.1).
+char* eiwa_crypto_random_base64(int64_t n) {
+    unsigned char* buf = (unsigned char*)GC_malloc((size_t)n);
+    if (RAND_bytes(buf, (int)n) != 1) return NULL;
+    return b64std_encode(buf, (size_t)n);
 }
 
 // Fills `buf` (GC-managed ByteArray-compatible raw bytes) with n

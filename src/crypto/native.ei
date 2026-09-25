@@ -26,6 +26,15 @@ lib NativeCrypto {
     @Alias("eiwa_crypto_b64url_decode")
     fun b64urlDecode(data: Pointer): Pointer
 
+    @Alias("eiwa_crypto_sha1_base64")
+    fun sha1Base64(data: Pointer): Pointer
+
+    @Alias("eiwa_crypto_base64_encode")
+    fun base64Encode(data: Pointer): Pointer
+
+    @Alias("eiwa_crypto_random_base64")
+    fun randomBase64(n: Int): Pointer
+
     @Alias("eiwa_crypto_random_base64url")
     fun randomBase64Url(n: Int): Pointer
 
