@@ -1,6 +1,7 @@
 import { assert } from "std.core"
 import { Crypto } from ".crypto.crypto"
 import { Encoding } from ".crypto.encoding"
+import { CryptoException } from ".crypto.crypto"
 
 // SHA-256 of "abc" (FIPS 180-4 test vector)
 test "crypto: sha256Hex known vector" {
@@ -78,4 +79,24 @@ test "crypto: randomBase64 shape for a 16-byte key" {
     assert(k.length == 24)
     val k2 = Crypto.randomBase64(16)
     assert(k != k2)
+}
+
+test "crypto: signEcdsaP256 rejects garbage key with exception (not SIGSEGV)" {
+    var threw = false
+    try {
+        Crypto.signEcdsaP256("header.payload", "not-a-key")
+    } catch (e: CryptoException) {
+        threw = true
+    }
+    assert(threw)
+}
+
+test "crypto: base64UrlDecode rejects invalid input with exception" {
+    var threw = false
+    try {
+        Encoding.base64UrlDecode("!!!not-b64!!!")
+    } catch (e: CryptoException) {
+        threw = true
+    }
+    assert(threw)
 }

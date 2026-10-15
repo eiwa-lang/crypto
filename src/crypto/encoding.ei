@@ -1,26 +1,27 @@
 import { String } from "std.core"
 import { NativeCrypto } from ".crypto.native"
+import { requireNative } from ".crypto.crypto"
 
 // Base64url encoding/decoding (RFC 4648 §5), with and without padding.
 object Encoding {
 
     // base64url without padding (JWT/JWS style)
     fun base64UrlNoPadding(data: String): String {
-        return String(NativeCrypto.b64urlEncode(data.ptr, 0))
+        return requireNative(NativeCrypto.b64urlEncode(data.ptr, 0), "base64UrlNoPadding")
     }
 
     // base64url with padding
     fun base64Url(data: String): String {
-        return String(NativeCrypto.b64urlEncode(data.ptr, 1))
+        return requireNative(NativeCrypto.b64urlEncode(data.ptr, 1), "base64Url")
     }
 
     // Decodes base64url with or without padding.
     fun base64UrlDecode(data: String): String {
-        return String(NativeCrypto.b64urlDecode(data.ptr))
+        return requireNative(NativeCrypto.b64urlDecode(data.ptr), "base64UrlDecode: invalid input")
     }
 
     // Standard base64 (RFC 4648 §4) with padding.
     fun base64(data: String): String {
-        return String(NativeCrypto.base64Encode(data.ptr))
+        return requireNative(NativeCrypto.base64Encode(data.ptr), "base64")
     }
 }

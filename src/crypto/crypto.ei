@@ -1,50 +1,64 @@
 import { String } from "std.core"
 import { NativeCrypto } from ".crypto.native"
 
+type CryptoException(val text: String) : Throwable {
+    implement fun message(): String = this.text
+}
+
+// Native calls return NULL on failure (bad key, bad input, RNG error).
+// A NULL pointer must never reach String() — that segfaults the process.
+// Centralize the check so every binding fails with a catchable exception.
+fun requireNative(out: Pointer, what: String): String {
+    if (out == null) {
+        throw CryptoException("crypto native call failed: $what")
+    }
+    return String(out)
+}
+
 // Cryptographic primitives backed by OpenSSL (libcrypto).
 // Mirrors kargo-crypto's API surface used by underhold services.
 object Crypto {
 
     // SHA-256 of a UTF-8 string, hex-encoded (lowercase).
     fun sha256Hex(data: String): String {
-        return String(NativeCrypto.sha256Hex(data.ptr))
+        return requireNative(NativeCrypto.sha256Hex(data.ptr), "sha256Hex")
     }
 
     // SHA-256 of a UTF-8 string, base64url-encoded without padding.
     // This is the PKCE S256 code_challenge form (RFC 7636).
     fun sha256Base64Url(data: String): String {
-        return String(NativeCrypto.sha256Base64Url(data.ptr))
+        return requireNative(NativeCrypto.sha256Base64Url(data.ptr), "sha256Base64Url")
     }
 
     // HMAC-SHA256 hex digest. Used by the signed session cookie transport.
     fun hmacSha256Hex(data: String, secret: String): String {
-        return String(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr))
+        return requireNative(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr), "hmacSha256Hex")
     }
 
     // Cryptographically secure random string: base64url(no padding) of `n`
     // random bytes, truncated to `n` chars. Used for PKCE verifier/state/nonce.
     fun secureRandom(length: Int): String {
-        return String(NativeCrypto.randomBase64Url(length), length)
+        return requireNative(NativeCrypto.randomBase64Url(length), "secureRandom").substring(0, length)
     }
 
     // SHA-1 digest, standard base64 (RFC 4648 §4, with padding).
     // Used for the WebSocket accept key (RFC 6455 §4.2.2).
     fun sha1Base64(data: String): String {
-        return String(NativeCrypto.sha1Base64(data.ptr))
+        return requireNative(NativeCrypto.sha1Base64(data.ptr), "sha1Base64")
     }
 
     // Cryptographically secure random string: standard base64 (with
     // padding) of `n` random bytes. `randomBase64(16)` is the
     // Sec-WebSocket-Key form (RFC 6455 §4.1).
     fun randomBase64(n: Int): String {
-        return String(NativeCrypto.randomBase64(n))
+        return requireNative(NativeCrypto.randomBase64(n), "randomBase64")
     }
 
     // Signs data with an EC P-256 private key (PEM) and returns the JWS/ES256
     // signature: base64url(no padding) of raw r||s (64 bytes) — NOT the
-    // ASN.1/DER form.
+    // ASN.1/DER form. Throws CryptoException when the key is rejected.
     fun signEcdsaP256(data: String, privateKeyPem: String): String {
         val pem = privateKeyPem.replace("\\n", "\n")
-        return String(NativeCrypto.signEs256(data.ptr, pem.ptr))
+        return requireNative(NativeCrypto.signEs256(data.ptr, pem.ptr), "signEcdsaP256: invalid EC private key")
     }
 }
