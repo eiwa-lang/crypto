@@ -159,6 +159,35 @@ char* eiwa_crypto_hmac_sha256_hex(const char* data, const char* key) {
     return to_hex(mac, mac_len);
 }
 
+// Binary-safe variants for S3/SigV4 (MinIO): use explicit lengths so
+// image bytes and intermediate HMAC keys containing NUL (0x00) work.
+// Eiwa `String` carries (ptr, length); callers pass data.length/key.length.
+
+char* eiwa_crypto_sha256_hex_bytes(const char* data, int64_t len) {
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256((const unsigned char*)data, (size_t)len, digest);
+    return to_hex(digest, SHA256_DIGEST_LENGTH);
+}
+
+char* eiwa_crypto_hmac_sha256_hex_bytes(const char* data, int64_t data_len, const char* key, int64_t key_len) {
+    unsigned char mac[EVP_MAX_MD_SIZE];
+    unsigned int mac_len = 0;
+    HMAC(EVP_sha256(), key, (int)key_len,
+         (const unsigned char*)data, (size_t)data_len, mac, &mac_len);
+    return to_hex(mac, mac_len);
+}
+
+// Raw 32-byte HMAC-SHA256 for SigV4 key derivation chaining.
+// Returns a GC buffer of exactly 32 bytes (may contain NULs); the Eiwa
+// side must wrap it as String(ptr, 32), never as NUL-terminated.
+char* eiwa_crypto_hmac_sha256_raw(const char* data, int64_t data_len, const char* key, int64_t key_len) {
+    unsigned char* out = (unsigned char*)GC_malloc(32);
+    unsigned int mac_len = 0;
+    HMAC(EVP_sha256(), key, (int)key_len,
+         (const unsigned char*)data, (size_t)data_len, out, &mac_len);
+    return (char*)out;
+}
+
 char* eiwa_crypto_b64url_encode(const char* data, int64_t padding) {
     return b64url_encode((const unsigned char*)data, strlen(data), padding != 0);
 }

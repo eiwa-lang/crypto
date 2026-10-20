@@ -100,3 +100,47 @@ test "crypto: base64UrlDecode rejects invalid input with exception" {
     }
     assert(threw)
 }
+
+test "crypto: sha256HexBytes matches sha256Hex on ASCII" {
+    assert(Crypto.sha256HexBytes("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+}
+
+test "crypto: hmacSha256HexBytes matches hmacSha256Hex on ASCII" {
+    assert(Crypto.hmacSha256HexBytes("what do ya want for nothing?", "Jefe") == "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")
+}
+
+test "crypto: sha256HexBytes is NUL-safe (does not truncate at 0x00)" {
+    // bytes [0x61, 0x00, 0x62] = "a\0b" — strlen-based hash would hash only "a"
+    val buf = Standard.gcMalloc(4)
+    NativeMemory.writeByte(buf, 0, 97)
+    NativeMemory.writeByte(buf, 1, 0)
+    NativeMemory.writeByte(buf, 2, 98)
+    NativeMemory.writeByte(buf, 3, 0)
+    val bin = String(buf, 3)
+    assert(bin.length == 3)
+    val full = Crypto.sha256HexBytes(bin)
+    val trunc = Crypto.sha256Hex("a")
+    assert(full != trunc)
+    // python: hashlib.sha256(b"a\x00b").hexdigest()
+    assert(full == "59b271ae1bbcb1d31d41929817f4b16fb439eb4f31520b5ad1d5ce98920a7138")
+}
+
+test "crypto: hmacSha256Raw chaining matches SigV4 key derivation" {
+    // AWS SigV4 example: key derivation must use raw 32-byte intermediates,
+    // not hex strings. Chained raw HMACs must verify against openssl:
+    // echo -n "20120215" | openssl dgst -sha256 -mac HMAC -macopt hexkey:<kSecret...>
+    val kSecret = "AWS4wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
+    val kDate = Crypto.hmacSha256Raw("20120215", kSecret)
+    assert(kDate.length == 32)
+    val kRegion = Crypto.hmacSha256Raw("us-east-1", kDate)
+    assert(kRegion.length == 32)
+    val kService = Crypto.hmacSha256Raw("iam", kRegion)
+    val kSigning = Crypto.hmacSha256Raw("aws4_request", kService)
+    val sig = Crypto.hmacSha256HexBytes("test-string-to-sign", kSigning)
+    assert(sig.length == 64)
+    // hex-chained (wrong) derivation must differ — guards against
+    // accidentally passing hex strings as the next key.
+    val wrongDate = Crypto.hmacSha256HexBytes("20120215", kSecret)
+    assert(wrongDate.length == 64)
+    assert(wrongDate != kDate)
+}

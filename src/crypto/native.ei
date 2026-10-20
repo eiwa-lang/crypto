@@ -17,6 +17,15 @@ lib NativeCrypto {
     @Alias("eiwa_crypto_hmac_sha256_hex")
     fun hmacSha256Hex(data: Pointer, key: Pointer): Pointer
 
+    @Alias("eiwa_crypto_sha256_hex_bytes")
+    fun sha256HexBytes(data: Pointer, len: Int): Pointer
+
+    @Alias("eiwa_crypto_hmac_sha256_hex_bytes")
+    fun hmacSha256HexBytes(data: Pointer, dataLen: Int, key: Pointer, keyLen: Int): Pointer
+
+    @Alias("eiwa_crypto_hmac_sha256_raw")
+    fun hmacSha256Raw(data: Pointer, dataLen: Int, key: Pointer, keyLen: Int): Pointer
+
     @Alias("eiwa_crypto_b64url_encode")
     fun b64urlEncode(data: Pointer, padding: Int): Pointer
 

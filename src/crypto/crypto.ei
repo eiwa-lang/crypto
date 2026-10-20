@@ -35,6 +35,30 @@ object Crypto {
         return requireNative(NativeCrypto.hmacSha256Hex(data.ptr, secret.ptr), "hmacSha256Hex")
     }
 
+    // Binary-safe SHA-256 hex: hashes exactly data.length bytes.
+    // Required for S3/SigV4 payload hashing (image bytes contain NULs,
+    // which the strlen-based sha256Hex would truncate).
+    fun sha256HexBytes(data: String): String {
+        return requireNative(NativeCrypto.sha256HexBytes(data.ptr, data.length), "sha256HexBytes")
+    }
+
+    // Binary-safe HMAC-SHA256 hex: uses explicit (ptr,len) for both
+    // data and key. Required for the final SigV4 signature step.
+    fun hmacSha256HexBytes(data: String, key: String): String {
+        return requireNative(NativeCrypto.hmacSha256HexBytes(data.ptr, data.length, key.ptr, key.length), "hmacSha256HexBytes")
+    }
+
+    // Raw 32-byte HMAC-SHA256 for SigV4 key-derivation chaining
+    // (kDate -> kRegion -> kService -> kSigning). Returns an opaque
+    // 32-byte String (binary-safe, may contain NULs).
+    fun hmacSha256Raw(data: String, key: String): String {
+        val out = NativeCrypto.hmacSha256Raw(data.ptr, data.length, key.ptr, key.length)
+        if (out == null) {
+            throw CryptoException("crypto native call failed: hmacSha256Raw")
+        }
+        return String(out, 32)
+    }
+
     // Cryptographically secure random string: base64url(no padding) of `n`
     // random bytes, truncated to `n` chars. Used for PKCE verifier/state/nonce.
     fun secureRandom(length: Int): String {
