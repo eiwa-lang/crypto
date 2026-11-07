@@ -59,6 +59,15 @@ object Crypto {
         return String(out, 32)
     }
 
+    // HMAC-SHA256 digest, base64url-encoded without padding (JWS/HS256 form).
+    // Binary-safe end to end: the raw 32-byte HMAC may contain NULs,
+    // which the strlen-based Encoding.base64UrlNoPadding would truncate
+    // (~12% of digests). Encodes exactly 32 bytes via explicit length.
+    fun hmacSha256Base64Url(data: String, secret: String): String {
+        val raw = Crypto.hmacSha256Raw(data, secret)
+        return requireNative(NativeCrypto.b64urlEncodeBytes(raw.ptr, 32, 0), "hmacSha256Base64Url")
+    }
+
     // Cryptographically secure random string: base64url(no padding) of `n`
     // random bytes, truncated to `n` chars. Used for PKCE verifier/state/nonce.
     fun secureRandom(length: Int): String {

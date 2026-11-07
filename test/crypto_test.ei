@@ -109,6 +109,18 @@ test "crypto: hmacSha256HexBytes matches hmacSha256Hex on ASCII" {
     assert(Crypto.hmacSha256HexBytes("what do ya want for nothing?", "Jefe") == "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")
 }
 
+test "crypto: hmacSha256Base64Url RFC 4231 vector" {
+    assert(Crypto.hmacSha256Base64Url("what do ya want for nothing?", "Jefe") == "W9zBRr9gdU5qBCQmCJV1x1oAPwidJzmDnexYuWTsOEM")
+}
+
+test "crypto: hmacSha256Base64Url survives NUL bytes in digest" {
+    // python: hmac.new(b"devkey0", b"header.payload0", sha256).digest()
+    // contains 0x00 at index 4 — strlen-based base64 would truncate it.
+    val sig = Crypto.hmacSha256Base64Url("header.payload0", "devkey0")
+    assert(sig == "LDgRggC47doylqqK4zZlbzWxCs5AMZknpnuxRf14QFc")
+    assert(sig.length == 43)
+}
+
 test "crypto: sha256HexBytes is NUL-safe (does not truncate at 0x00)" {
     // bytes [0x61, 0x00, 0x62] = "a\0b" — strlen-based hash would hash only "a"
     val buf = Standard.gcMalloc(4)
