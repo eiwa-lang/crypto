@@ -114,8 +114,6 @@ test "crypto: hmacSha256Base64Url RFC 4231 vector" {
 }
 
 test "crypto: hmacSha256Base64Url survives NUL bytes in digest" {
-    // python: hmac.new(b"devkey0", b"header.payload0", sha256).digest()
-    // contains 0x00 at index 4 — strlen-based base64 would truncate it.
     val sig = Crypto.hmacSha256Base64Url("header.payload0", "devkey0")
     assert(sig == "LDgRggC47doylqqK4zZlbzWxCs5AMZknpnuxRf14QFc")
     assert(sig.length == 43)
